@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" href="3rd/bootstrap/css/bootstrap.min.css" >
+
+    <style>
+        .search{
+            padding-bottom: 5px;
+        }
+        .change{
+            text-align: right;
+            margin: 0%;
+        }
+        .pagination{
+            margin: 0px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="uname">用户名</label>
+                            <input type="text" class="form-control" id="uname" placeholder="请输入姓名" v-model="ed.name">
+                        </div>
+                        <div class="form-group">
+                            <label for="uaccount">账号</label>
+                            <input type="text" class="form-control" id="uaccount" placeholder="请输入账号" v-model="ed.account">
+                        </div>
+                        <div class="form-group">
+                            <label for="upasswd">密码</label>
+                            <input type="text" class="form-control" id="upasswd" placeholder="请输入密码" v-model="ed.passwd">
+                        </div>
+                        <div class="form-group">
+                            <label for="uage">年龄</label>
+                            <input type="text" class="form-control" id="uage" placeholder="请输入年龄" v-model="ed.age">
+                        </div>
+                        <div class="form-group">
+                            <label for="ujob">角色</label>
+                            <input type="text" class="form-control" id="ujob" placeholder="请输入职位" v-model="ed.job">
+                        </div>
+                        <div class="form-group">
+                            <label>状态</label>
+                            <input id="statuson" type="radio" name="status" value="1" v-model="ed.status"><label for="statuson"> 启用</label>
+                            <input id="statusoff" type="radio" name="status" value="0" v-model="ed.status"><label for="statusoff"> 禁用</label>
+                        </div>
+                        <div class="form-group">
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal" @click="closeMo()">关闭</button>
+                        <button type="button" class="btn btn-primary" @click="save()">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="search">
+            <form class="form-inline">
+                <button type="button" class="btn btn-info" @click="selAll()">{{selType?'取消':'全选'}}</button>
+                <button type="button" class="btn btn-success" @click="add()">添加</button>
+                <button type="button" class="btn btn-warning" @click="delMore()">批量删除</button>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" placeholder="请输入姓名" v-model="sd.uname">
+                </div>
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="text" class="form-control" id="age" placeholder="请输入年龄" v-model="sd.age">
+                </div>
+                <button type="button" class="btn btn-default" @click="doSearch()">搜索</button>
+            </form>
+        </div>
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <td>选择</td>
+                    <td>序号</td>
+                    <td>用户名</td>
+                    <td>账号</td>
+                    <td>密码</td>
+                    <td>年龄</td>
+                    <td>角色</td>
+                    <td>状态</td>
+                    <td>操作</td>
+                </tr>
+            </thead>
+            <tbody >
+                <tr v-for="(data,i) in dataList">
+                    <td>
+                        <input type="checkbox" :value="data.id" v-model="ids"/>
+                    </td>
+                    <td>{{i+1}}</td>
+                    <td>{{data.name}}</td>
+                    <td>{{data.account}}</td>
+                    <td>{{data.passwd}}</td>
+                    <td>{{data.age}}</td>
+                    <td>{{data.job}}</td>
+                    <td>{{data.status==1 ? '启用':'禁用'}}</td>
+                    <td>
+                        <button class="btn btn-info btn-xs" @click="edit(data)">修改</button>
+                        <button class="btn btn-danger btn-xs" @click="del(data.id)">删除</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="change">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <li><a @click="upPage()">上一页</a></li>
+                    <li><a @click="downPage()">下一页</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <script src="3rd/jq/jquery.min.js" ></script>
+    <script src="3rd/vue/vue.min.js"></script>
+    <script src="3rd/bootstrap/js/bootstrap.js" ></script>
+    <script src="3rd/layer/layer.js"></script>
+
+    <script>
+         var vm = new Vue({
+            el: '.app',
+            data: {
+                pageIndex: 1,
+                maxPage: 1,
+                dataList:[],
+                ids:[],
+                ed:{
+                    id:0,
+                    name:"",
+                    account:"",
+                    passwd:"",
+                    age:"",
+                    job:"",
+                    status:""
+                },
+                sd:{
+                    uname:"",
+                    age:""
+                },
+                selType:false,
+            },
+            methods: {
+                //全选
+                selAll:function(){
+                    if(this.selType){
+                        //取消
+                        this.ids=[];
+                    }else{
+                        for(var i in this.dataList)  {
+                            var id=this.dataList[i].id;
+                            this.ids.push(id);
+                        }
+                    }
+                    this.selType=!this.selType;
+                },
+                //打开模态框
+                openMo:function(){
+                    $('#myModal').modal({
+                        show:true,
+                        keyboard:false,//键盘上的 esc 键被按下时关闭模态框。
+                        backdrop:'static'
+                    });
+                },
+                //关闭模态框
+                closeMo:function(){
+                    $('#myModal').modal('hide');
+                },
+                //新增信息
+                add:function(){
+                    this.ed={
+                        id:0,
+                        name:"",
+                        account:"",
+                        passwd:"",
+                        age:"",
+                        job:"",
+                        status:""
+                    }
+                     this.openMo();
+                },
+                //修改信息
+                edit:function(data){
+                    this.ed.id=data.id;
+                    this.ed.name=data.name;
+                    this.ed.account=data.account;
+                    this.ed.passwd=data.passwd;
+                    this.ed.age=data.age;
+                    this.ed.job=data.job;
+                    this.ed.status=data.status;
+                    this.openMo();
+                },
+                //保存信息
+                save:function(){
+                    $.ajax({
+                        url: "user-save",
+                        type: "POST",
+                        dataType: "JSON",
+                        //scriptCharset: 'UTF-8',
+                        data: vm.ed,
+                        success: function (resp) {
+                            if(resp.type){
+                                layer.msg('保存成功');
+                                vm.closeMo();
+                                vm.getData();
+                            }else{
+                                alert("保存失败")
+                            }
+                        },
+                        error: function (resp) {
+                            layer.alert('系统异常')
+                        }
+                    });
+                },
+                //批量删除
+                delMore:function(){
+                    var idStr=this.ids.join(",");
+                    console.log(idStr);
+                    if(idStr==""){
+                        layer.msg('请选择要删除的数据！');
+                        return;
+                    }
+                    this.del(idStr);
+                },
+                //删除
+                del:function(ids){
+                    layer.confirm('确认要删除信息?', {
+                        btn: ['确认','取消'] //按钮
+                    },
+                        function(){
+                        $.ajax({
+                            url: "user-del",
+                            type: "POST",
+                            dataType: "JSON",
+                            scriptCharset: 'UTF-8',
+                            data: {
+                                ids:ids
+                            },
+                            success: function (resp) {
+                                if(resp.type){
+                                    layer.alert('删除成功',{skin: 'layui-layer-lan'
+                                        ,closeBtn: 0
+                                        ,anim: 4 //动画类型
+                                    }, )
+                                    vm.getData();
+                                }else{
+                                    alert("删除失败")
+                                }
+                            },
+                            error: function (resp) {
+                                layer.alert('系统异常')
+                            }
+                        });
+                    });
+                },
+
+                //下一页
+                downPage: function () {
+                    this.pageIndex = this.pageIndex + 1;
+                    if (this.pageIndex > this.maxPage) {
+                        this.pageIndex = this.maxPage;
+                        return;
+                    }
+                    this.getData();
+                },
+                //上一页
+                upPage: function () {
+                    this.pageIndex = this.pageIndex - 1;
+                    if (this.pageIndex < 1) {
+                        this.pageIndex = 1;
+                        return;
+                    }
+                    this.getData();
+                },
+                //搜索
+                doSearch:function(){
+                    this.pageIndex=1;
+                    this.getData();
+                },
+                getData: function () {
+                    $.ajax({
+                        url: "user-list",
+                        type: "POST",
+                        dataType: "JSON",
+                        scriptCharset: 'UTF-8',
+                        data: {
+                            pageIndex: vm.pageIndex,
+                            uname:vm.sd.uname,
+                            age:vm.sd.age
+                        },
+                        success: function (resp) {
+                            vm.maxPage = resp.maxPage;
+                            vm.dataList = resp.dataList;
+                        },
+                        error: function (resp) {
+                            layer.alert("系统异常")
+                        }
+                    });
+                }
+            }
+        });
+        vm.getData();
+    </script>
+</body>
+</html>
